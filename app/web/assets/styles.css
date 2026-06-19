@@ -1,0 +1,65 @@
+/* Premium theme overrides for KG-RAG Legal Assistant */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #1e2740; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.tab-btn {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.6rem;
+  color: #93a0bd;
+  transition: all .15s ease;
+}
+.tab-btn:hover { background: rgba(30,39,64,.6); color: #e2e8f0; }
+.tab-btn.active {
+  background: linear-gradient(90deg, rgba(212,175,106,.16), rgba(212,175,106,.02));
+  color: #e8d6a8;
+  box-shadow: inset 2px 0 0 #d4af6a;
+}
+
+.lux-input {
+  width: 100%;
+  background: #0c1120;
+  border: 1px solid #1e2740;
+  border-radius: .6rem;
+  padding: .65rem .8rem;
+  color: #e2e8f0;
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.lux-input:focus { border-color: #d4af6a; }
+textarea.lux-input { resize: vertical; min-height: 120px; }
+
+.card {
+  background: rgba(17,23,38,.7);
+  border: 1px solid rgba(30,39,64,.8);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+.glow-btn {
+  background: linear-gradient(90deg,#d4af6a,#e8d6a8);
+  color: #0a0e1a;
+  font-weight: 600;
+  border-radius: .65rem;
+  transition: opacity .15s, transform .1s;
+}
+.glow-btn:hover { opacity: .92; }
+.glow-btn:active { transform: scale(.985); }
+
+.pill { font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid #1e2740; }
+.pill-HIGH, .pill-STRONG, .pill-LOW-risk { color:#7ee2a8; border-color:#1f5138; background:rgba(46,160,67,.12); }
+.pill-MEDIUM, .pill-MODERATE { color:#e8d6a8; border-color:#5c4a22; background:rgba(212,175,106,.12); }
+.pill-LOW, .pill-WEAK, .pill-HIGH-risk { color:#f1a3a3; border-color:#5c2a2a; background:rgba(180,60,60,.12); }
+
+.trace-step { display:flex; gap:.6rem; align-items:flex-start; font-size:.82rem; color:#9fb0d0; padding:.25rem 0; }
+.trace-step .dot { width:7px; height:7px; border-radius:999px; margin-top:.45rem; background:#d4af6a; box-shadow:0 0 8px #d4af6a; flex:0 0 auto; }
+
+.fade-in { animation: fade .35s ease both; }
+@keyframes fade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+.markdown h1,.markdown h2 { font-family:'Fraunces',serif; color:#e8d6a8; margin:.4rem 0; }
+.markdown strong { color:#f3e6cf; }
+.markdown ul { list-style: disc; margin-left:1.1rem; }
+.markdown p { margin:.4rem 0; line-height:1.6; }

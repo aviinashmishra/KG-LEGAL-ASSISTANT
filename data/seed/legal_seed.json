@@ -1,0 +1,86 @@
+{
+  "_comment": "Seed knowledge graph for the KG-RAG Legal Assistant. Real Indian statutes and landmark Supreme Court cases. Texts are paraphrased summaries for demo purposes, NOT verbatim statutory text.",
+  "acts": [
+    {"act_id": "act_ipc_1860", "title": "Indian Penal Code", "year": 1860, "ministry": "Ministry of Home Affairs", "current_status": "largely replaced by Bharatiya Nyaya Sanhita 2023"},
+    {"act_id": "act_bns_2023", "title": "Bharatiya Nyaya Sanhita", "year": 2023, "ministry": "Ministry of Home Affairs", "current_status": "in force from 1 July 2024"},
+    {"act_id": "act_crpc_1973", "title": "Code of Criminal Procedure", "year": 1973, "ministry": "Ministry of Home Affairs", "current_status": "replaced by Bharatiya Nagarik Suraksha Sanhita 2023"},
+    {"act_id": "act_constitution_1950", "title": "Constitution of India", "year": 1950, "ministry": "Ministry of Law and Justice", "current_status": "in force"},
+    {"act_id": "act_contract_1872", "title": "Indian Contract Act", "year": 1872, "ministry": "Ministry of Law and Justice", "current_status": "in force"},
+    {"act_id": "act_it_2000", "title": "Information Technology Act", "year": 2000, "ministry": "Ministry of Electronics and Information Technology", "current_status": "in force, amended 2008"}
+  ],
+  "sections": [
+    {"section_id": "node_ipc_302", "act_id": "act_ipc_1860", "number": "302", "title": "Punishment for murder", "text": "Whoever commits murder shall be punished with death, or imprisonment for life, and shall also be liable to fine.", "proviso": "", "explanation": "Murder is defined in Section 300. Punishment under 302 is death or life imprisonment.", "concepts": ["murder", "death penalty", "capital punishment"]},
+    {"section_id": "node_ipc_300", "act_id": "act_ipc_1860", "number": "300", "title": "Murder", "text": "Culpable homicide is murder if the act causing death is done with the intention of causing death, subject to exceptions such as grave and sudden provocation.", "proviso": "Exception 1: grave and sudden provocation. Exception 4: sudden fight.", "explanation": "Defines when culpable homicide amounts to murder.", "concepts": ["murder", "culpable homicide", "mens rea"]},
+    {"section_id": "node_ipc_420", "act_id": "act_ipc_1860", "number": "420", "title": "Cheating and dishonestly inducing delivery of property", "text": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property shall be punished with imprisonment up to seven years, and shall also be liable to fine.", "proviso": "", "explanation": "Punishment for cheating with dishonest inducement of property delivery.", "concepts": ["cheating", "fraud", "property"]},
+    {"section_id": "node_ipc_34", "act_id": "act_ipc_1860", "number": "34", "title": "Acts done by several persons in furtherance of common intention", "text": "When a criminal act is done by several persons in furtherance of the common intention of all, each person is liable as if the act were done by him alone.", "proviso": "", "explanation": "Establishes joint/constructive liability via common intention.", "concepts": ["common intention", "joint liability", "abetment"]},
+    {"section_id": "node_bns_103", "act_id": "act_bns_2023", "number": "103", "title": "Punishment for murder", "text": "Whoever commits murder shall be punished with death or imprisonment for life and shall also be liable to fine. Mob lynching on specified grounds is separately punishable.", "proviso": "", "explanation": "BNS successor provision to IPC Section 302.", "concepts": ["murder", "death penalty"]},
+    {"section_id": "node_crpc_437", "act_id": "act_crpc_1973", "number": "437", "title": "When bail may be taken in case of non-bailable offence", "text": "A person accused of a non-bailable offence may be released on bail, but not if there appear reasonable grounds that he is guilty of an offence punishable with death or imprisonment for life.", "proviso": "Proviso: the court may direct release of a person under sixteen, a woman, or a sick or infirm person.", "explanation": "Bail in non-bailable offences before a Magistrate.", "concepts": ["bail", "non-bailable offence"]},
+    {"section_id": "node_crpc_438", "act_id": "act_crpc_1973", "number": "438", "title": "Direction for grant of bail to person apprehending arrest (anticipatory bail)", "text": "Where any person has reason to believe that he may be arrested on accusation of a non-bailable offence, he may apply to the High Court or Court of Session for a direction that he be released on bail in the event of arrest.", "proviso": "", "explanation": "Anticipatory bail; jurisdiction lies with Sessions Court and High Court.", "concepts": ["anticipatory bail", "bail", "arrest"]},
+    {"section_id": "node_crpc_41", "act_id": "act_crpc_1973", "number": "41", "title": "When police may arrest without warrant", "text": "A police officer may arrest without a warrant a person concerned in a cognizable offence, subject to recording reasons where the offence is punishable with up to seven years.", "proviso": "Amended in 2009 to require recorded reasons and a notice of appearance under Section 41A.", "explanation": "Conditions for warrantless arrest; tightened post-2009.", "concepts": ["arrest", "police powers", "cognizable offence"]},
+    {"section_id": "node_const_21", "act_id": "act_constitution_1950", "number": "21", "title": "Protection of life and personal liberty", "text": "No person shall be deprived of his life or personal liberty except according to procedure established by law.", "proviso": "", "explanation": "Fundamental right; expanded by Maneka Gandhi to require fair, just and reasonable procedure.", "concepts": ["right to life", "personal liberty", "due process"]},
+    {"section_id": "node_const_14", "act_id": "act_constitution_1950", "number": "14", "title": "Equality before law", "text": "The State shall not deny to any person equality before the law or the equal protection of the laws within the territory of India.", "proviso": "", "explanation": "Guarantees equality and non-arbitrariness.", "concepts": ["equality", "non-arbitrariness"]},
+    {"section_id": "node_contract_27", "act_id": "act_contract_1872", "number": "27", "title": "Agreement in restraint of trade void", "text": "Every agreement by which anyone is restrained from exercising a lawful profession, trade or business is to that extent void.", "proviso": "Exception: sale of goodwill.", "explanation": "Basis for the general unenforceability of post-employment non-compete clauses in India.", "concepts": ["restraint of trade", "non-compete", "void agreement"]},
+    {"section_id": "node_it_66a", "act_id": "act_it_2000", "number": "66A", "title": "Punishment for sending offensive messages (struck down)", "text": "Provided punishment for sending offensive messages through communication services. Struck down as unconstitutional in 2015.", "proviso": "", "explanation": "Inserted by the 2008 amendment; held void in Shreya Singhal v Union of India.", "concepts": ["free speech", "online speech", "Section 66A"]}
+  ],
+  "cases": [
+    {"case_id": "case_bachan_singh", "title": "Bachan Singh v. State of Punjab", "court": "Supreme Court of India", "year": 1980, "bench": "Constitution Bench (5 judges)", "outcome": "Death penalty constitutional; rarest of rare doctrine established", "summary": "Upheld constitutional validity of the death penalty under Section 302 IPC and laid down the 'rarest of rare' doctrine limiting its imposition."},
+    {"case_id": "case_mithu_punjab", "title": "Mithu v. State of Punjab", "court": "Supreme Court of India", "year": 1983, "bench": "Constitution Bench (5 judges)", "outcome": "Section 303 IPC (mandatory death) struck down", "summary": "Struck down mandatory death penalty under Section 303 IPC as violative of Articles 14 and 21."},
+    {"case_id": "case_siddharam", "title": "Siddharam Satlingappa Mhetre v. State of Maharashtra", "court": "Supreme Court of India", "year": 2010, "bench": "Division Bench (2 judges)", "outcome": "Anticipatory bail principles clarified", "summary": "Laid down comprehensive guidelines for grant of anticipatory bail under Section 438 CrPC; anticipatory bail can ordinarily continue till end of trial."},
+    {"case_id": "case_maneka_gandhi", "title": "Maneka Gandhi v. Union of India", "court": "Supreme Court of India", "year": 1978, "bench": "Constitution Bench (7 judges)", "outcome": "Article 21 procedure must be fair, just and reasonable", "summary": "Expanded Article 21: 'procedure established by law' must be fair, just and reasonable, linking Articles 14, 19 and 21."},
+    {"case_id": "case_shreya_singhal", "title": "Shreya Singhal v. Union of India", "court": "Supreme Court of India", "year": 2015, "bench": "Division Bench (2 judges)", "outcome": "Section 66A IT Act struck down", "summary": "Struck down Section 66A of the IT Act 2000 as an unconstitutional restriction on free speech under Article 19(1)(a)."},
+    {"case_id": "case_arnesh_kumar", "title": "Arnesh Kumar v. State of Bihar", "court": "Supreme Court of India", "year": 2014, "bench": "Division Bench (2 judges)", "outcome": "Guidelines against automatic arrest", "summary": "Directed police to follow Section 41 CrPC checklist before arrest in offences punishable up to seven years; curbs automatic arrest."},
+
+    {"case_id": "case_outcome_302_a", "title": "State v. Ramesh (murder, premeditated)", "court": "Supreme Court of India", "year": 2016, "offence_section": "302", "outcome": "conviction", "factors": ["premeditation", "eyewitness testimony", "recovery of weapon"], "summary": "Conviction under Section 302 upheld; premeditation and corroborated eyewitness evidence."},
+    {"case_id": "case_outcome_302_b", "title": "State v. Suresh (sudden fight)", "court": "High Court", "year": 2018, "offence_section": "302", "outcome": "acquittal", "factors": ["sudden fight", "grave and sudden provocation", "no premeditation"], "summary": "Converted from 302 to 304 Part II; grave and sudden provocation and absence of premeditation."},
+    {"case_id": "case_outcome_302_c", "title": "State v. Mahesh (circumstantial)", "court": "Supreme Court of India", "year": 2019, "offence_section": "302", "outcome": "conviction", "factors": ["circumstantial evidence", "last seen together", "motive proven"], "summary": "Conviction sustained on a complete chain of circumstantial evidence."},
+    {"case_id": "case_outcome_302_d", "title": "State v. Dinesh (weak evidence)", "court": "High Court", "year": 2020, "offence_section": "302", "outcome": "acquittal", "factors": ["hostile witnesses", "no recovery", "benefit of doubt"], "summary": "Acquittal due to hostile witnesses and absence of corroboration."},
+    {"case_id": "case_outcome_438_a", "title": "X v. State (anticipatory bail, economic offence)", "court": "High Court", "year": 2019, "offence_section": "438", "outcome": "bail granted", "factors": ["cooperation with investigation", "no flight risk", "documentary offence"], "summary": "Anticipatory bail granted; accused cooperative and no custodial interrogation needed."},
+    {"case_id": "case_outcome_438_b", "title": "Y v. State (anticipatory bail, heinous offence)", "court": "High Court", "year": 2021, "offence_section": "438", "outcome": "bail denied", "factors": ["heinous offence", "flight risk", "influence over witnesses"], "summary": "Anticipatory bail denied for a serious offence with risk of tampering."},
+    {"case_id": "case_outcome_420_a", "title": "State v. Anil (cheating, large scale)", "court": "High Court", "year": 2017, "offence_section": "420", "outcome": "conviction", "factors": ["dishonest inducement", "documentary trail", "multiple victims"], "summary": "Conviction under Section 420; clear dishonest inducement and money trail."},
+    {"case_id": "case_outcome_420_b", "title": "State v. Pooja (civil dispute)", "court": "High Court", "year": 2022, "offence_section": "420", "outcome": "acquittal", "factors": ["civil in nature", "no dishonest intention at inception", "breach of contract"], "summary": "Acquittal; transaction was essentially a civil dispute without initial dishonest intent."}
+  ],
+  "concepts": [
+    {"concept_id": "concept_murder", "name": "murder", "definition": "Unlawful killing with the intention or knowledge defined under Section 300 IPC.", "hindi": "hatya"},
+    {"concept_id": "concept_bail", "name": "bail", "definition": "Release of an accused person from custody, often on conditions, pending trial.", "hindi": "zamaanat"},
+    {"concept_id": "concept_anticipatory_bail", "name": "anticipatory bail", "definition": "A direction to release a person on bail in the event of a future arrest.", "hindi": "agrim zamaanat"},
+    {"concept_id": "concept_noncompete", "name": "non-compete", "definition": "A clause restraining a person from competing or working with a competitor, generally void post-employment in India under Section 27 Contract Act.", "hindi": "gair-pratispardha"},
+    {"concept_id": "concept_right_to_life", "name": "right to life", "definition": "Fundamental right under Article 21 to life and personal liberty.", "hindi": "jeevan ka adhikaar"}
+  ],
+  "amendments": [
+    {"amendment_id": "amend_crpc_41_2009", "parent_section_id": "node_crpc_41", "year": 2009, "effective_date": "2009-11-01", "change_type": "substitution", "trigger_event": "Code of Criminal Procedure (Amendment) Act 2008", "old_text": "Police could arrest in any cognizable offence with wide discretion.", "new_text": "For offences punishable up to seven years, officer must record reasons and may issue notice of appearance (Section 41A)."},
+    {"amendment_id": "amend_it_66a_2008", "parent_section_id": "node_it_66a", "year": 2008, "effective_date": "2009-10-27", "change_type": "insertion", "trigger_event": "Information Technology (Amendment) Act 2008", "old_text": "", "new_text": "Inserted Section 66A penalising offensive electronic messages (later struck down in 2015)."}
+  ],
+  "edges": [
+    {"type": "APPLICABLE_TO", "from": "node_ipc_302", "to": "concept_murder"},
+    {"type": "APPLICABLE_TO", "from": "node_ipc_300", "to": "concept_murder"},
+    {"type": "APPLICABLE_TO", "from": "node_crpc_437", "to": "concept_bail"},
+    {"type": "APPLICABLE_TO", "from": "node_crpc_438", "to": "concept_anticipatory_bail"},
+    {"type": "APPLICABLE_TO", "from": "node_contract_27", "to": "concept_noncompete"},
+    {"type": "APPLICABLE_TO", "from": "node_const_21", "to": "concept_right_to_life"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_bachan_singh"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_mithu_punjab"},
+    {"type": "CITED_IN", "from": "node_crpc_438", "to": "case_siddharam"},
+    {"type": "CITED_IN", "from": "node_const_21", "to": "case_maneka_gandhi"},
+    {"type": "CITED_IN", "from": "node_const_21", "to": "case_mithu_punjab"},
+    {"type": "CITED_IN", "from": "node_const_14", "to": "case_mithu_punjab"},
+    {"type": "CITED_IN", "from": "node_it_66a", "to": "case_shreya_singhal"},
+    {"type": "CITED_IN", "from": "node_crpc_41", "to": "case_arnesh_kumar"},
+    {"type": "INTERPRETED_BY", "from": "node_ipc_302", "to": "case_bachan_singh"},
+    {"type": "INTERPRETED_BY", "from": "node_crpc_438", "to": "case_siddharam"},
+    {"type": "INTERPRETED_BY", "from": "node_const_21", "to": "case_maneka_gandhi"},
+    {"type": "INTERPRETED_BY", "from": "node_crpc_41", "to": "case_arnesh_kumar"},
+    {"type": "OVERRULES", "from": "case_mithu_punjab", "to": "case_bachan_singh"},
+    {"type": "AMENDS", "from": "act_bns_2023", "to": "act_ipc_1860"},
+    {"type": "SUPERSEDES", "from": "node_bns_103", "to": "node_ipc_302"},
+    {"type": "SUPERSEDES", "from": "amend_crpc_41_2009", "to": "node_crpc_41"},
+    {"type": "SUPERSEDES", "from": "amend_it_66a_2008", "to": "node_it_66a"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_outcome_302_a"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_outcome_302_b"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_outcome_302_c"},
+    {"type": "CITED_IN", "from": "node_ipc_302", "to": "case_outcome_302_d"},
+    {"type": "CITED_IN", "from": "node_crpc_438", "to": "case_outcome_438_a"},
+    {"type": "CITED_IN", "from": "node_crpc_438", "to": "case_outcome_438_b"},
+    {"type": "CITED_IN", "from": "node_ipc_420", "to": "case_outcome_420_a"},
+    {"type": "CITED_IN", "from": "node_ipc_420", "to": "case_outcome_420_b"}
+  ]
+}

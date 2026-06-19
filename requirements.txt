@@ -1,0 +1,50 @@
+# ---- Core ----
+pydantic>=2.6,<3
+pydantic-settings>=2.2
+python-dotenv>=1.0
+numpy>=1.26
+typing-extensions>=4.10
+
+# ---- Orchestration / agents ----
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# ---- Knowledge graph ----
+neo4j>=5.18
+networkx>=3.2          # local fallback graph
+
+# ---- Vector / retrieval ----
+qdrant-client>=1.8
+rank-bm25>=0.2.2
+sentence-transformers>=2.6   # local dense-embedding fallback
+
+# ---- LLM / embeddings / rerank providers (real path) ----
+anthropic>=0.34
+openai>=1.30
+cohere>=5.5
+
+# ---- Document parsing ----
+# docling is heavy; optional. The parser falls back to pdfminer/regex if absent.
+pdfminer.six>=20231228
+# docling>=2.0          # uncomment to enable IBM Docling parsing
+
+# ---- API ----
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sse-starlette>=2.1
+
+# ---- UI ----
+streamlit>=1.33
+pyvis>=0.3.2
+
+# ---- Eval (optional) ----
+# ragas>=0.1.0          # uncomment to enable RAGAS metrics
+
+# ---- Persistence / auth / hardening ----
+sqlmodel>=0.0.16        # SQLAlchemy + Pydantic models (SQLite by default)
+PyJWT>=2.8              # JWT auth
+redis>=5.0              # optional cache / rate-limit backend (falls back to in-memory)
+
+# ---- Dev / test ----
+pytest>=8.1
+httpx>=0.27
