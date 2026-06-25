@@ -9,5 +9,6 @@ venv/
 data/index/
 data/app.db
 *.html
+!app/web/index.html
 node_modules/
 .DS_Store

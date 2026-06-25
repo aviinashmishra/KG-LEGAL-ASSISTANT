@@ -47,6 +47,26 @@ uvicorn app.api.main:app --reload      # open http://localhost:8000  → premium
 Or with the classic demo UI: `streamlit run ui/streamlit_app.py`
 Or the whole stack in Docker: `docker compose up --build` (API + Neo4j + Qdrant + Redis).
 
+## Deploy (one-click flash deployment)
+
+The app ships as a single FastAPI service (SPA + API in one container) and binds to `$PORT`, so it
+drops onto any cloud host. Every provider key is **optional** — with none set it still runs fully on
+local fallbacks. Set `JWT_SECRET` (and `ADMIN_PASSWORD`) for any public deployment.
+
+| Platform | How | Notes |
+|---|---|---|
+| **Render** | New → Blueprint → pick this repo (`render.yaml`) | Free plan, Docker, auto-deploy on push; `JWT_SECRET` auto-generated. |
+| **Railway** | New Project → Deploy from repo (`Procfile`) | Runs `release: ingest_seed` then `web: uvicorn`. |
+| **Fly.io** | `fly launch --no-deploy && fly deploy` (`fly.toml`) | `fly secrets set ANTHROPIC_API_KEY=… JWT_SECRET=…`. |
+| **Any Docker host** | `docker build -t kg-legal . && docker run -p 8000:8000 -e PORT=8000 kg-legal` | Self-host / VPS / Cloud Run / ECS. |
+
+Set provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `NEO4J_URI`/`NEO4J_PASSWORD`, `QDRANT_URL`/
+`QDRANT_API_KEY`, `COHERE_API_KEY`, `REDIS_URL`) in the platform's dashboard/secrets to upgrade each
+layer to its real provider. Health: `GET /health`; readiness + active providers: `GET /ready`.
+
+> SQLite (`data/app.db`) is ephemeral on free/stateless hosts — attach a persistent disk/volume at
+> `/app/data`, or set `DATABASE_URL` to managed Postgres, to retain users & history across deploys.
+
 ## Product features
 
 **Core research**
