@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KG-RAG Legal Assistant · Indian Legal Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- 3D luxury knowledge-graph engine (Three.js + force-directed + bloom) -->
+  <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.70.10/dist/3d-force-graph.min.js"></script>
+  <script src="https://unpkg.com/three-spritetext@1.6.5/dist/three-spritetext.min.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        fontFamily: { sans: ['Inter','sans-serif'], display: ['Fraunces','serif'] },
+        colors: {
+          ink: '#0a0e1a', panel: '#111726', edge: '#1e2740',
+          gold: '#d4af6a', goldsoft: '#e8d6a8', accent: '#6ea8fe'
+        }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-ink text-slate-200 font-sans antialiased">
+  <!-- cinematic boot screen -->
+  <div id="bootScreen">
+    <div class="boot-inner">
+      <div class="boot-ring"></div>
+      <div class="boot-mark">⚖</div>
+      <div class="boot-title">KG-RAG Legal</div>
+      <div class="boot-sub">INDIAN&nbsp;&nbsp;LEGAL&nbsp;&nbsp;INTELLIGENCE</div>
+      <div class="boot-bar"><span></span></div>
+    </div>
+  </div>
+
+  <!-- live 3D ambient constellation -->
+  <canvas id="bgfx" class="fixed inset-0 -z-20"></canvas>
+
+  <!-- ambient luxury background (orbs + vignette over the 3D field) -->
+  <div class="fixed inset-0 -z-10 pointer-events-none">
+    <div class="orb orb-gold"></div>
+    <div class="orb orb-blue"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- cursor-follow aurora -->
+  <div id="aurora" class="fixed inset-0 -z-10 pointer-events-none"></div>
+
+  <div class="flex min-h-screen relative">
+    <!-- Sidebar -->
+    <aside class="app-sidebar hidden lg:flex flex-col w-72 p-5 gap-4">
+      <div class="flex items-center gap-3">
+        <div class="brand-mark w-10 h-10 rounded-xl grid place-items-center text-ink font-bold text-lg">⚖</div>
+        <div>
+          <div class="font-display text-lg leading-tight gold-text">KG-RAG Legal</div>
+          <div class="text-[11px] text-slate-400 tracking-[0.18em]">INDIAN LEGAL INTELLIGENCE</div>
+        </div>
+      </div>
+
+      <button id="newChatBtn" class="new-research-btn mt-2 w-full py-2.5 rounded-lg text-ink font-semibold text-sm">✦ New Research</button>
+
+      <nav class="flex flex-col gap-1 text-sm mt-2" id="navTabs">
+        <button data-tab="chat" class="tab-btn active">💬 Research Chat</button>
+        <button data-tab="explorer" class="tab-btn">🌌 3D Graph Explorer</button>
+        <button data-tab="contradiction" class="tab-btn">⚔️ Contradiction Detector</button>
+        <button data-tab="timeline" class="tab-btn">🕰️ Legal Timeline</button>
+        <button data-tab="outcome" class="tab-btn">📊 Outcome Predictor</button>
+        <button data-tab="clause" class="tab-btn">🛡️ Clause Risk Scorer</button>
+        <button data-tab="jurisdiction" class="tab-btn">🗺️ Jurisdiction Mapper</button>
+        <button data-tab="drafter" class="tab-btn">✍️ Contract Drafter</button>
+        <button data-tab="hindi" class="tab-btn">🇮🇳 Hindi Bridge</button>
+        <button data-tab="admin" class="tab-btn">📈 Admin Analytics</button>
+      </nav>
+
+      <div class="mt-auto text-xs text-slate-400">
+        <div id="historyBox" class="space-y-1 max-h-48 overflow-auto pr-1"></div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col min-w-0">
+      <!-- top bar -->
+      <header class="topbar flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+          <span class="lg:hidden gold-text font-display text-lg">⚖ KG-RAG Legal</span>
+          <span id="providerBadge" class="status-badge hidden sm:inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full">loading…</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="usageBadge" class="text-[11px] px-3 py-1 rounded-full border border-edge text-slate-400"></span>
+          <button id="upgradeBtn" class="upgrade-btn text-xs px-3.5 py-1.5 rounded-lg">✦ Upgrade</button>
+          <button id="authBtn" class="auth-btn text-xs px-3.5 py-1.5 rounded-lg">Sign in</button>
+        </div>
+      </header>
+
+      <section class="flex-1 overflow-auto p-6" id="panelHost"></section>
+    </main>
+  </div>
+
+  <!-- Auth modal -->
+  <div id="authModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+    <div class="w-full max-w-sm bg-panel border border-edge rounded-2xl p-6 shadow-2xl">
+      <h3 class="font-display text-xl text-goldsoft mb-1">Welcome back</h3>
+      <p class="text-xs text-slate-400 mb-4">Sign in or create an account to save research & history.</p>
+      <input id="authEmail" type="email" placeholder="Email" class="lux-input mb-2" />
+      <input id="authPassword" type="password" placeholder="Password" class="lux-input mb-3" />
+      <div class="flex gap-2">
+        <button id="loginSubmit" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-gold to-goldsoft text-ink font-semibold text-sm">Sign in</button>
+        <button id="signupSubmit" class="flex-1 py-2 rounded-lg border border-edge text-sm hover:bg-edge/50">Sign up</button>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3">Demo admin: admin@kg-legal.ai / admin</p>
+      <button id="authClose" class="absolute top-4 right-5 text-slate-500 hover:text-slate-300">✕</button>
+    </div>
+  </div>
+
+  <!-- 3D node inspector flyout -->
+  <div id="nodeInspector" class="fixed top-24 right-6 w-72 hidden z-40">
+    <div class="card p-4 shadow-2xl">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <div id="niType" class="text-[10px] uppercase tracking-widest text-gold mb-1"></div>
+          <div id="niTitle" class="font-display text-base text-goldsoft leading-tight"></div>
+        </div>
+        <button id="niClose" class="text-slate-500 hover:text-slate-300">✕</button>
+      </div>
+      <div id="niBody" class="mt-3 text-xs text-slate-300 space-y-1.5 max-h-72 overflow-auto"></div>
+    </div>
+  </div>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>

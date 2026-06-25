@@ -22,13 +22,193 @@ const host = () => el("#panelHost");
 function esc(s) { return (s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
 function pill(level, kind = "") { return `<span class="pill pill-${level}${kind}">${level}</span>`; }
 
+// ---------- 3D knowledge-graph engine ----------
+const GTYPE = {
+  Act:          { color: "#ff9e54", glow: "#ffb877", icon: "📜" },
+  Section:      { color: "#6ea8fe", glow: "#a9c8ff", icon: "§"  },
+  Case:         { color: "#f1707b", glow: "#ff9aa3", icon: "⚖" },
+  LegalConcept: { color: "#7ee2a8", glow: "#b6f3cf", icon: "◆" },
+  Amendment:    { color: "#c79bff", glow: "#ddc4ff", icon: "✎" },
+  Unknown:      { color: "#94a3b8", glow: "#cbd5e1", icon: "•" },
+};
+const gtype = (t) => GTYPE[t] || GTYPE.Unknown;
+const _graphs = new Map();   // container element -> ForceGraph3D instance (for resize/cleanup)
+
+// keep every live 3D canvas matched to its container on viewport changes
+window.addEventListener("resize", () => {
+  for (const [container, Graph] of _graphs) {
+    if (!document.body.contains(container)) { _graphs.delete(container); continue; }
+    Graph.width(container.clientWidth).height(container.clientHeight);
+  }
+});
+
+// Build a luxe 3D force graph inside `container` from {nodes, links}.
+function build3DGraph(container, data, opts = {}) {
+  if (!window.ForceGraph3D) { container.innerHTML = `<div class="grid place-items-center h-full text-xs text-slate-500">3D engine offline — check your connection.</div>`; return null; }
+  if (_graphs.has(container)) { try { _graphs.get(container)._destructor(); } catch (_) {} _graphs.delete(container); }
+  const W = container.clientWidth || 600, H = container.clientHeight || 360;
+  const Graph = ForceGraph3D({ controlType: "orbit" })(container)
+    .backgroundColor("rgba(0,0,0,0)")
+    .width(W).height(H)
+    .showNavInfo(false)
+    .nodeRelSize(opts.nodeRelSize || 4)
+    .nodeVal("val")
+    .nodeColor(n => n.anchor ? gtype(n.type).glow : gtype(n.type).color)
+    .nodeOpacity(0.95)
+    .linkColor(() => "rgba(212,175,106,0.35)")
+    .linkWidth(l => l.type === "RELATED" ? 0.4 : 0.8)
+    .linkDirectionalParticles(opts.particles ?? 2)
+    .linkDirectionalParticleWidth(1.6)
+    .linkDirectionalParticleSpeed(0.006)
+    .linkDirectionalParticleColor(() => "#e8d6a8")
+    .nodeThreeObject(n => {
+      const g = gtype(n.type);
+      const sprite = new SpriteText(n.label);
+      sprite.color = n.anchor ? "#fff7e6" : "#dbe4f5";
+      sprite.backgroundColor = n.anchor ? "rgba(212,175,106,0.28)" : "rgba(8,12,24,0.55)";
+      sprite.padding = 2; sprite.borderRadius = 3;
+      sprite.fontFace = "Inter"; sprite.fontWeight = n.anchor ? "700" : "500";
+      sprite.textHeight = opts.textHeight || 4;
+      sprite.material.depthWrite = false;
+      return sprite;
+    })
+    .nodeThreeObjectExtend(true)
+    .onNodeHover(n => { container.style.cursor = n ? "pointer" : "grab"; })
+    .onNodeClick(n => {
+      // fly camera to the node, then surface its details
+      opts._paused = true;   // stop auto-rotate so the fly-to isn't overridden
+      const dist = 90, r = Math.hypot(n.x, n.y, n.z) || 1;
+      Graph.cameraPosition(
+        { x: n.x * (1 + dist / r), y: n.y * (1 + dist / r), z: n.z * (1 + dist / r) },
+        n, 900
+      );
+      if (opts.onSelect) opts.onSelect(n); else showInspector(n);
+    })
+    .graphData(data);
+
+  // luxury bloom post-processing — only the core three.min.js build ships, so
+  // UnrealBloomPass may be absent; glow then falls back to node/sprite styling.
+  try {
+    if (Graph.postProcessingComposer && window.THREE && THREE.UnrealBloomPass) {
+      const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 1.1, 0.55, 0.18);
+      Graph.postProcessingComposer().addPass(bloom);
+    }
+  } catch (_) {}
+
+  // gentle charge so clusters breathe; slow auto-rotate for the "luxury" feel
+  Graph.d3Force("charge").strength(opts.charge ?? -65);
+  if (opts.autoRotate !== false) {
+    let angle = 0; const dist0 = opts.camDist || 220;
+    Graph.cameraPosition({ z: dist0 });
+    const rot = () => {
+      if (!_graphs.has(container)) return;
+      if (!opts._paused) { angle += 0.0016; Graph.cameraPosition({ x: dist0 * Math.sin(angle), z: dist0 * Math.cos(angle) }); }
+      requestAnimationFrame(rot);
+    };
+    requestAnimationFrame(rot);
+    container.addEventListener("mousedown", () => opts._paused = true);
+  }
+  Graph.__opts = opts;
+  _graphs.set(container, Graph);
+  return Graph;
+}
+
+function showInspector(n) {
+  const box = el("#nodeInspector"); if (!box) return;
+  const g = gtype(n.type);
+  el("#niType").innerHTML = `<span style="color:${g.color}">${g.icon}</span> ${esc(n.type)}`;
+  el("#niTitle").textContent = n.title || n.label;
+  const p = n.props || {};
+  const rows = [];
+  const add = (k, v) => v && rows.push(`<div><span class="text-slate-500">${k}:</span> ${esc(String(v))}</div>`);
+  add("Number", p.number); add("Year", p.year); add("Court", p.court); add("Outcome", p.outcome);
+  add("Definition", p.definition);
+  if (p.text) rows.push(`<div class="text-slate-300 leading-relaxed mt-1">${esc(String(p.text).slice(0, 260))}${p.text.length > 260 ? "…" : ""}</div>`);
+  if (p.summary) rows.push(`<div class="text-slate-300 leading-relaxed mt-1">${esc(String(p.summary).slice(0, 260))}${p.summary.length > 260 ? "…" : ""}</div>`);
+  el("#niBody").innerHTML = rows.join("") || `<div class="text-slate-500">${esc(n.id)}</div>`;
+  box.classList.remove("hidden");
+}
+
 // ---------- bootstrap ----------
 window.addEventListener("DOMContentLoaded", async () => {
+  initAmbient3D();
+  initAurora();
   bindChrome();
   await refreshStatus();
   await refreshAccount();
   switchTab("chat");
+  // lift the cinematic curtain once the interface is live
+  setTimeout(() => el("#bootScreen")?.classList.add("hide"), 650);
 });
+
+// ---------- live 3D ambient constellation (Three.js) ----------
+function initAmbient3D() {
+  const canvas = el("#bgfx");
+  if (!canvas || !window.THREE) return;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); }
+  catch (_) { return; }   // no WebGL → silently keep the CSS background
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 1, 2400);
+  camera.position.z = 540;
+
+  // soft round glow sprite so particles read as luminous dust, not squares
+  const sprite = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d"); const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, "rgba(255,255,255,1)"); grd.addColorStop(.25, "rgba(255,246,224,.85)"); grd.addColorStop(1, "rgba(255,246,224,0)");
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+    const t = new THREE.Texture(c); t.needsUpdate = true; return t;
+  })();
+
+  const N = innerWidth < 760 ? 700 : 1500;
+  const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  const gold = new THREE.Color("#d4af6a"), blue = new THREE.Color("#6ea8fe"), white = new THREE.Color("#cdd6f4");
+  for (let i = 0; i < N; i++) {
+    const r = 300 + Math.random() * 760;
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+    pos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+    pos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th) * 0.62;
+    pos[i * 3 + 2] = r * Math.cos(ph);
+    const c = Math.random() < .55 ? gold : (Math.random() < .5 ? blue : white);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 3.2, map: sprite, vertexColors: true, transparent: true, opacity: .92,
+    depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+  });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+
+  let tmx = 0, tmy = 0;
+  window.addEventListener("pointermove", e => { tmx = e.clientX / innerWidth - .5; tmy = e.clientY / innerHeight - .5; });
+  const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+  resize(); window.addEventListener("resize", resize);
+
+  (function loop() {
+    points.rotation.y += 0.0006; points.rotation.x += 0.00018;
+    camera.position.x += (tmx * 130 - camera.position.x) * 0.03;
+    camera.position.y += (-tmy * 90 - camera.position.y) * 0.03;
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  })();
+}
+
+// ---------- cursor-follow aurora ----------
+function initAurora() {
+  const root = document.documentElement;
+  window.addEventListener("pointermove", e => {
+    root.style.setProperty("--mx", (e.clientX / innerWidth * 100) + "%");
+    root.style.setProperty("--my", (e.clientY / innerHeight * 100) + "%");
+  }, { passive: true });
+}
 
 function bindChrome() {
   document.querySelectorAll(".tab-btn").forEach(b =>
@@ -41,6 +221,7 @@ function bindChrome() {
   el("#loginSubmit").addEventListener("click", () => doAuth("login"));
   el("#signupSubmit").addEventListener("click", () => doAuth("signup"));
   el("#upgradeBtn").addEventListener("click", () => switchTab("billing"));
+  el("#niClose")?.addEventListener("click", () => el("#nodeInspector").classList.add("hidden"));
 }
 function closeAuth() { el("#authModal").classList.add("hidden"); el("#authModal").classList.remove("flex"); }
 
@@ -59,7 +240,7 @@ async function refreshAccount() {
   if (!state.token) { btn.textContent = "Sign in"; usage.textContent = ""; return; }
   try {
     const me = await api("/auth/me");
-    state.tier = me.tier; state.isAdmin = me.is_admin;
+    state.tier = me.tier; state.isAdmin = me.is_admin; state.email = me.email || state.email;
     btn.textContent = "Sign out";
     usage.textContent = `${me.tier.toUpperCase()} · ${me.usage_today}/${me.daily_quota} today`;
     loadHistory();
@@ -70,6 +251,7 @@ async function doAuth(kind) {
   const email = el("#authEmail").value.trim(), password = el("#authPassword").value;
   try {
     const r = await api("/auth/" + kind, { method: "POST", body: JSON.stringify({ email, password }) });
+    state.email = email;
     state.token = r.access_token; localStorage.setItem("kgl_token", state.token);
     closeAuth(); await refreshAccount(); switchTab(state.currentTab);
   } catch (e) { alert(kind + " failed: " + e.message); }
@@ -96,7 +278,8 @@ async function openConversation(cid) {
 function switchTab(tab) {
   state.currentTab = tab;
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  const r = { chat: renderChat, contradiction: renderContradiction, timeline: renderTimeline,
+  el("#nodeInspector")?.classList.add("hidden");
+  const r = { chat: renderChat, explorer: renderExplorer, contradiction: renderContradiction, timeline: renderTimeline,
     outcome: renderOutcome, clause: renderClause, jurisdiction: renderJurisdiction,
     drafter: renderDrafter, hindi: renderHindi, admin: renderAdmin, billing: renderBilling };
   (r[tab] || renderChat)();
@@ -106,11 +289,16 @@ function switchTab(tab) {
 function renderChat() {
   host().innerHTML = `
     <div class="max-w-5xl mx-auto">
+      <div id="chatHero" class="text-center pt-6 pb-10 fade-in">
+        <div class="hero-mark mx-auto">⚖</div>
+        <h1 class="font-display text-3xl sm:text-4xl mt-5 gold-text">Indian Legal Intelligence</h1>
+        <p class="text-slate-400 mt-2 max-w-xl mx-auto">Knowledge-graph-grounded answers with verified citations, a live 3D reasoning map, and zero hallucination drift. Ask anything about Indian law.</p>
+      </div>
       <div id="chatLog" class="space-y-4 mb-6"></div>
-      <div class="card p-3 sticky bottom-0">
+      <div class="card composer p-3 sticky bottom-0">
         <div class="flex gap-2">
           <input id="chatInput" class="lux-input" placeholder="Ask any Indian-law question — e.g. Can anticipatory bail be granted for Section 302 IPC?" />
-          <button id="chatSend" class="glow-btn px-6">Ask</button>
+          <button id="chatSend" class="glow-btn px-6">Ask ✦</button>
         </div>
         <div class="flex gap-2 mt-2 flex-wrap text-[11px] text-slate-400">
           ${["What is the punishment under Section 302 IPC?","Can anticipatory bail be granted for Section 302?","What changed in CrPC Section 41 after 2009?","Is a 12-month non-compete clause enforceable in India?"]
@@ -122,10 +310,16 @@ function renderChat() {
   el("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
   document.querySelectorAll(".suggest").forEach(b => b.addEventListener("click", () => { el("#chatInput").value = b.textContent; sendChat(); }));
 }
+function userInitial() { return ((state.email || "U").trim()[0] || "U").toUpperCase(); }
 function renderUserMsg(text) {
+  el("#chatHero")?.remove();
   const log = el("#chatLog");
-  log.insertAdjacentHTML("beforeend", `<div class="fade-in flex justify-end"><div class="card px-4 py-2 max-w-2xl bg-edge/40">${esc(text)}</div></div>`);
-  log.scrollIntoView({ block: "end" });
+  log.insertAdjacentHTML("beforeend",
+    `<div class="msg-row user fade-in">
+       <div class="bubble-user">${esc(text)}</div>
+       <div class="avatar me">${userInitial()}</div>
+     </div>`);
+  log.lastElementChild?.scrollIntoView({ block: "end", behavior: "smooth" });
 }
 
 async function sendChat() {
@@ -134,11 +328,15 @@ async function sendChat() {
   const log = el("#chatLog");
   const id = "a" + Date.now();
   log.insertAdjacentHTML("beforeend", `
-    <div id="${id}" class="fade-in card p-4">
-      <div id="${id}-trace" class="space-y-0.5 mb-2"></div>
-      <div id="${id}-body"></div>
+    <div class="msg-row fade-in">
+      <div class="avatar ai">⚖</div>
+      <div id="${id}" class="card answer-card p-4 flex-1 min-w-0">
+        <div id="${id}-trace" class="space-y-0.5 mb-2"></div>
+        <div id="${id}-body"></div>
+      </div>
     </div>`);
   const traceBox = el(`#${id}-trace`);
+  el(`#${id}`)?.scrollIntoView({ block: "end", behavior: "smooth" });
 
   try {
     const res = await fetch(API + "/chat/stream", { method: "POST", headers: authHeaders(), body: JSON.stringify({ query: q }) });
@@ -166,8 +364,13 @@ async function sendChat() {
 }
 
 function renderAnswer(final) {
+  el("#chatHero")?.remove();
   const log = el("#chatLog"); const id = "a" + Date.now();
-  log.insertAdjacentHTML("beforeend", `<div id="${id}" class="fade-in card p-4"><div id="${id}-body"></div></div>`);
+  log.insertAdjacentHTML("beforeend",
+    `<div class="msg-row fade-in">
+       <div class="avatar ai">⚖</div>
+       <div id="${id}" class="card answer-card p-4 flex-1 min-w-0"><div id="${id}-body"></div></div>
+     </div>`);
   el(`#${id}-body`).innerHTML = answerHtml(final); mountGraph(id, final.kg_nodes_traversed);
 }
 function answerHtml(f) {
@@ -181,20 +384,99 @@ function answerHtml(f) {
     <div class="markdown text-sm">${marked.parse(f.answer || "")}</div>
     <div class="grid md:grid-cols-2 gap-4 mt-4">
       <div><div class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Citations</div>${cites}</div>
-      <div><div class="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Knowledge-graph traversal</div><div id="GRAPH" class="h-56 rounded-lg border border-edge bg-ink/40"></div></div>
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <div class="text-[11px] uppercase tracking-wider text-slate-500">Knowledge-graph traversal · 3D</div>
+          <span class="text-[10px] text-slate-600">drag to orbit · click a node</span>
+        </div>
+        <div id="GRAPH" class="graph3d h-64 rounded-lg border border-edge bg-ink/40 relative overflow-hidden"></div>
+      </div>
     </div>`;
 }
-function mountGraph(scope, nodeIds) {
-  // find the latest GRAPH placeholder inside this scope
-  const container = el(`#${scope}`)?.querySelector("#GRAPH"); if (!container || !window.vis) return;
-  const nodes = (nodeIds || []).map(id => ({ id, label: id.replace(/^node_|^case_|^concept_/, ""), shape: "dot", size: 14 }));
-  const edges = [];
-  for (let i = 1; i < nodes.length; i++) edges.push({ from: nodes[0].id, to: nodes[i].id });
-  new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
-    nodes: { color: { background: "#d4af6a", border: "#e8d6a8" }, font: { color: "#cdd6f4", size: 11 } },
-    edges: { color: "#3a4straight" .replace("straight","663"), smooth: true },
-    physics: { stabilization: true }, interaction: { hover: true }
+// Fetch the real induced subgraph (typed edges + node metadata) and render it in 3D.
+async function mountGraph(scope, nodeIds) {
+  const container = el(`#${scope}`)?.querySelector("#GRAPH"); if (!container) return;
+  container.innerHTML = `<div class="grid place-items-center h-full text-xs text-slate-500 animate-pulse">Rendering knowledge graph…</div>`;
+  let data = { nodes: [], links: [] };
+  try {
+    data = await api("/graph/subgraph", { method: "POST", body: JSON.stringify({ node_ids: nodeIds || [], expand: 1 }) });
+  } catch (_) {
+    // fallback: star graph from the raw IDs so the panel is never empty
+    data = { nodes: (nodeIds || []).map(id => ({ id, label: id.replace(/^node_|^case_|^concept_|^act_/, ""), type: "Unknown", val: 5, anchor: true })), links: [] };
+    for (let i = 1; i < data.nodes.length; i++) data.links.push({ source: data.nodes[0].id, target: data.nodes[i].id, type: "RELATED" });
+  }
+  container.innerHTML = "";
+  if (!data.nodes.length) { container.innerHTML = `<div class="grid place-items-center h-full text-xs text-slate-500">No graph nodes traversed.</div>`; return; }
+  build3DGraph(container, data, { particles: 2, textHeight: 4, camDist: 180, autoRotate: true });
+  container.insertAdjacentHTML("beforeend", graphLegendHtml(true));
+}
+function graphLegendHtml(compact = false) {
+  const items = ["Act", "Section", "Case", "LegalConcept", "Amendment"];
+  return `<div class="graph-legend ${compact ? "compact" : ""}">` +
+    items.map(t => `<span class="leg"><i style="background:${gtype(t).color}"></i>${t === "LegalConcept" ? "Concept" : t}</span>`).join("") + `</div>`;
+}
+
+// ---------- 3D GRAPH EXPLORER (full galaxy) ----------
+async function renderExplorer() {
+  host().innerHTML = `
+    <div class="explorer-wrap fade-in">
+      <div class="flex items-end justify-between mb-3 flex-wrap gap-3">
+        <div>
+          <h2 class="font-display text-2xl text-goldsoft">🌌 Knowledge Graph Explorer</h2>
+          <p class="text-sm text-slate-400">The living map of Indian law — statutes, cases, concepts & amendments in 3D. Drag to orbit, scroll to zoom, click any node.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="gqSearch" class="lux-input !w-56" placeholder="Find a section / case…" />
+          <button id="gqReset" class="text-xs px-3 py-2 rounded-lg border border-edge hover:border-gold/50">Reset view</button>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 mb-3" id="gFilters"></div>
+      <div class="relative rounded-2xl border border-edge overflow-hidden bg-ink/40" style="height:68vh">
+        <div id="EXPLORER" class="graph3d absolute inset-0"></div>
+        <div id="gStats" class="absolute top-3 left-4 text-[11px] text-slate-400"></div>
+        ${graphLegendHtml(false).replace('class="graph-legend ', 'class="graph-legend explorer-legend ')}
+      </div>
+    </div>`;
+
+  const cont = el("#EXPLORER");
+  cont.innerHTML = `<div class="grid place-items-center h-full text-sm text-slate-400 animate-pulse">Loading the legal universe…</div>`;
+  let full;
+  try { full = await api("/graph/full?limit=400"); }
+  catch (e) { cont.innerHTML = `<div class="grid place-items-center h-full text-sm text-red-400">Could not load graph: ${esc(e.message)}</div>`; return; }
+  cont.innerHTML = "";
+  el("#gStats").innerHTML = `<b class="text-gold">${full.nodes.length}</b> nodes · <b class="text-gold">${full.links.length}</b> relationships`;
+
+  const active = new Set(Object.keys(GTYPE).filter(t => t !== "Unknown"));
+  const Graph = build3DGraph(cont, full, { particles: 1, textHeight: 5, camDist: 320, charge: -90, autoRotate: true, nodeRelSize: 4 });
+
+  function applyFilter() {
+    const nodes = full.nodes.filter(n => active.has(n.type));
+    const ids = new Set(nodes.map(n => n.id));
+    const links = full.links.filter(l => ids.has(l.source.id || l.source) && ids.has(l.target.id || l.target));
+    Graph.graphData({ nodes, links });
+    el("#gStats").innerHTML = `<b class="text-gold">${nodes.length}</b> nodes · <b class="text-gold">${links.length}</b> relationships`;
+  }
+  // type filter chips
+  el("#gFilters").innerHTML = [...active].map(t =>
+    `<button class="gchip active" data-t="${t}"><i style="background:${gtype(t).color}"></i>${t === "LegalConcept" ? "Concepts" : t + "s"}</button>`).join("");
+  el("#gFilters").querySelectorAll(".gchip").forEach(b => b.addEventListener("click", () => {
+    const t = b.dataset.t; b.classList.toggle("active");
+    if (active.has(t)) active.delete(t); else active.add(t);
+    applyFilter();
+  }));
+
+  // search → focus the matching node
+  el("#gqSearch").addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    const q = e.target.value.trim().toLowerCase(); if (!q) return;
+    const hit = full.nodes.find(n => (n.label + " " + n.title).toLowerCase().includes(q));
+    if (!hit) { el("#gStats").innerHTML = `<span class="text-red-400">No match for "${esc(q)}"</span>`; return; }
+    Graph.__opts._paused = true;
+    const r = Math.hypot(hit.x || 1, hit.y || 1, hit.z || 1) || 1;
+    Graph.cameraPosition({ x: hit.x * 1.6, y: hit.y * 1.6, z: hit.z * 1.6 + 40 }, hit, 1000);
+    showInspector(hit);
   });
+  el("#gqReset").addEventListener("click", () => { Graph.__opts._paused = true; Graph.zoomToFit(800, 60); el("#nodeInspector").classList.add("hidden"); });
 }
 
 // ---------- generic feature panel helper ----------

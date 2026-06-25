@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import admin, auth, billing, chat, features
+from app.api.routers import admin, auth, billing, chat, features, graph
 from app.bootstrap import initialize
 from app.config import get_settings
 from app.core.logging import get_logger
@@ -58,6 +58,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(features.router)
+app.include_router(graph.router)
 app.include_router(admin.router)
 app.include_router(billing.router)
 

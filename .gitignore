@@ -11,4 +11,5 @@ data/*.db
 data/pdfs/*
 !data/pdfs/.gitkeep
 *.html
+!app/web/index.html
 .DS_Store
