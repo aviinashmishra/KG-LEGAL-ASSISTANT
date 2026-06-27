@@ -22,14 +22,18 @@ const host = () => el("#panelHost");
 function esc(s) { return (s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
 function pill(level, kind = "") { return `<span class="pill pill-${level}${kind}">${level}</span>`; }
 
+// refined scales-of-justice mark (monochrome, inherits currentColor)
+const SCALES_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 6h10"/><path d="M5 21h14"/><path d="M7 6l-3 6a3 3 0 0 0 6 0Z"/><path d="M17 6l-3 6a3 3 0 0 0 6 0Z"/></svg>`;
+
 // ---------- 3D knowledge-graph engine ----------
+// `icon` glyphs are plain text so they honour the type colour in the inspector.
 const GTYPE = {
-  Act:          { color: "#ff9e54", glow: "#ffb877", icon: "📜" },
-  Section:      { color: "#6ea8fe", glow: "#a9c8ff", icon: "§"  },
-  Case:         { color: "#f1707b", glow: "#ff9aa3", icon: "⚖" },
-  LegalConcept: { color: "#7ee2a8", glow: "#b6f3cf", icon: "◆" },
-  Amendment:    { color: "#c79bff", glow: "#ddc4ff", icon: "✎" },
-  Unknown:      { color: "#94a3b8", glow: "#cbd5e1", icon: "•" },
+  Act:          { color: "#e0a86b", glow: "#ffcf9a", icon: "¶" },
+  Section:      { color: "#7fb0ff", glow: "#bcd6ff", icon: "§"  },
+  Case:         { color: "#f1909a", glow: "#ffb3ba", icon: "‡" },
+  LegalConcept: { color: "#86e6ad", glow: "#bdf6d4", icon: "◆" },
+  Amendment:    { color: "#c9a6ff", glow: "#e0caff", icon: "✦" },
+  Unknown:      { color: "#a7b0c4", glow: "#d2d8e4", icon: "•" },
 };
 const gtype = (t) => GTYPE[t] || GTYPE.Unknown;
 const _graphs = new Map();   // container element -> ForceGraph3D instance (for resize/cleanup)
@@ -164,9 +168,10 @@ function initAmbient3D() {
     const t = new THREE.Texture(c); t.needsUpdate = true; return t;
   })();
 
-  const N = innerWidth < 760 ? 700 : 1500;
+  const N = innerWidth < 760 ? 380 : 820;
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
-  const gold = new THREE.Color("#d4af6a"), blue = new THREE.Color("#6ea8fe"), white = new THREE.Color("#cdd6f4");
+  // warm, ink-toned dust so the particles read softly on the ivory canvas
+  const gold = new THREE.Color("#b89352"), blue = new THREE.Color("#5b6b86"), white = new THREE.Color("#8a8073");
   for (let i = 0; i < N; i++) {
     const r = 300 + Math.random() * 760;
     const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
@@ -180,8 +185,8 @@ function initAmbient3D() {
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
   const mat = new THREE.PointsMaterial({
-    size: 3.2, map: sprite, vertexColors: true, transparent: true, opacity: .92,
-    depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+    size: 2.2, map: sprite, vertexColors: true, transparent: true, opacity: .5,
+    depthWrite: false, blending: THREE.NormalBlending, sizeAttenuation: true,
   });
   const points = new THREE.Points(geo, mat);
   scene.add(points);
@@ -210,10 +215,14 @@ function initAurora() {
   }, { passive: true });
 }
 
+function closeNav() { document.body.classList.remove("nav-open"); }
 function bindChrome() {
   document.querySelectorAll(".tab-btn").forEach(b =>
     b.addEventListener("click", () => switchTab(b.dataset.tab)));
   el("#newChatBtn").addEventListener("click", () => switchTab("chat"));
+  // mobile drawer navigation
+  el("#mobileMenuBtn")?.addEventListener("click", () => document.body.classList.toggle("nav-open"));
+  el("#navScrim")?.addEventListener("click", closeNav);
   el("#authBtn").addEventListener("click", () => {
     if (state.token) { logout(); } else { el("#authModal").classList.remove("hidden"); el("#authModal").classList.add("flex"); }
   });
@@ -277,6 +286,7 @@ async function openConversation(cid) {
 // ---------- tab routing ----------
 function switchTab(tab) {
   state.currentTab = tab;
+  closeNav();
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   el("#nodeInspector")?.classList.add("hidden");
   const r = { chat: renderChat, explorer: renderExplorer, contradiction: renderContradiction, timeline: renderTimeline,
@@ -290,15 +300,16 @@ function renderChat() {
   host().innerHTML = `
     <div class="max-w-5xl mx-auto">
       <div id="chatHero" class="text-center pt-6 pb-10 fade-in">
-        <div class="hero-mark mx-auto">⚖</div>
-        <h1 class="font-display text-3xl sm:text-4xl mt-5 gold-text">Indian Legal Intelligence</h1>
-        <p class="text-slate-400 mt-2 max-w-xl mx-auto">Knowledge-graph-grounded answers with verified citations, a live 3D reasoning map, and zero hallucination drift. Ask anything about Indian law.</p>
+        <div class="hero-mark mx-auto">${SCALES_SVG}</div>
+        <div class="eyebrow mt-5">Indian Legal Intelligence</div>
+        <h1 class="font-display text-3xl sm:text-4xl mt-2 text-ink">Grounded answers, verified citations</h1>
+        <p class="text-slate-400 mt-3 max-w-xl mx-auto">Every answer is traced to the knowledge graph with verified citations and a live reasoning map — built to resist hallucination. Ask anything about Indian law.</p>
       </div>
       <div id="chatLog" class="space-y-4 mb-6"></div>
       <div class="card composer p-3 sticky bottom-0">
         <div class="flex gap-2">
           <input id="chatInput" class="lux-input" placeholder="Ask any Indian-law question — e.g. Can anticipatory bail be granted for Section 302 IPC?" />
-          <button id="chatSend" class="glow-btn px-6">Ask ✦</button>
+          <button id="chatSend" class="glow-btn px-6">Ask</button>
         </div>
         <div class="flex gap-2 mt-2 flex-wrap text-[11px] text-slate-400">
           ${["What is the punishment under Section 302 IPC?","Can anticipatory bail be granted for Section 302?","What changed in CrPC Section 41 after 2009?","Is a 12-month non-compete clause enforceable in India?"]
@@ -329,7 +340,7 @@ async function sendChat() {
   const id = "a" + Date.now();
   log.insertAdjacentHTML("beforeend", `
     <div class="msg-row fade-in">
-      <div class="avatar ai">⚖</div>
+      <div class="avatar ai">${SCALES_SVG}</div>
       <div id="${id}" class="card answer-card p-4 flex-1 min-w-0">
         <div id="${id}-trace" class="space-y-0.5 mb-2"></div>
         <div id="${id}-body"></div>
@@ -368,14 +379,14 @@ function renderAnswer(final) {
   const log = el("#chatLog"); const id = "a" + Date.now();
   log.insertAdjacentHTML("beforeend",
     `<div class="msg-row fade-in">
-       <div class="avatar ai">⚖</div>
+       <div class="avatar ai">${SCALES_SVG}</div>
        <div id="${id}" class="card answer-card p-4 flex-1 min-w-0"><div id="${id}-body"></div></div>
      </div>`);
   el(`#${id}-body`).innerHTML = answerHtml(final); mountGraph(id, final.kg_nodes_traversed);
 }
 function answerHtml(f) {
   const conf = f.confidence || "LOW";
-  const cites = (f.citations || []).map(c => `<div class="text-xs flex gap-2 items-center">${c.verified ? "✅" : "⚠️"} <span>${esc(c.display)}</span> <code class="text-slate-500">${esc(c.kg_node || "")}</code></div>`).join("") || `<div class="text-xs text-slate-500">No verified citations</div>`;
+  const cites = (f.citations || []).map(c => `<div class="text-xs flex gap-2 items-center">${c.verified ? '<span class="cite-ok" title="Verified against the knowledge graph">✓</span>' : '<span class="cite-warn" title="Unverified">!</span>'} <span>${esc(c.display)}</span> <code class="text-slate-500">${esc(c.kg_node || "")}</code></div>`).join("") || `<div class="text-xs text-slate-500">No verified citations</div>`;
   return `
     <div class="flex items-center gap-3 mb-2 text-xs">
       ${pill(conf)} <span class="text-slate-400">hallucination: ${(f.hallucination_score ?? 0).toFixed(2)}</span>
@@ -422,8 +433,9 @@ async function renderExplorer() {
     <div class="explorer-wrap fade-in">
       <div class="flex items-end justify-between mb-3 flex-wrap gap-3">
         <div>
-          <h2 class="font-display text-2xl text-goldsoft">🌌 Knowledge Graph Explorer</h2>
-          <p class="text-sm text-slate-400">The living map of Indian law — statutes, cases, concepts & amendments in 3D. Drag to orbit, scroll to zoom, click any node.</p>
+          <div class="eyebrow mb-1">Knowledge Graph</div>
+          <h2 class="font-display text-2xl text-ink">Graph Explorer</h2>
+          <p class="text-sm text-slate-400">The living map of Indian law — statutes, cases, concepts &amp; amendments in 3D. Drag to orbit, scroll to zoom, click any node.</p>
         </div>
         <div class="flex items-center gap-2">
           <input id="gqSearch" class="lux-input !w-56" placeholder="Find a section / case…" />
@@ -480,9 +492,10 @@ async function renderExplorer() {
 }
 
 // ---------- generic feature panel helper ----------
-function panel(title, subtitle, inner) {
+function panel(title, subtitle, inner, eyebrow = "Legal Tool") {
   host().innerHTML = `<div class="max-w-4xl mx-auto fade-in">
-    <h2 class="font-display text-2xl text-goldsoft mb-1">${title}</h2>
+    <div class="eyebrow mb-2">${eyebrow}</div>
+    <h2 class="font-display text-2xl text-ink mb-1">${title}</h2>
     <p class="text-sm text-slate-400 mb-5">${subtitle}</p>
     <div class="card p-5">${inner}</div>
     <div id="result" class="mt-5"></div></div>`;
@@ -492,7 +505,7 @@ function showJSONerr(e) { el("#result").innerHTML = `<div class="text-red-400 te
 
 // ---------- CONTRADICTION ----------
 function renderContradiction() {
-  panel("⚔️ Legal Contradiction Detector", "Upload/paste a contract clause-set; we flag conflicts against Indian statutes (PRD §7.1).",
+  panel("Legal Contradiction Detector", "Upload/paste a contract clause-set; we flag conflicts against Indian statutes (PRD §7.1).",
     `<textarea id="docA" class="lux-input mb-2" placeholder="Document A (e.g. employment contract clauses)…">The employee agrees to a 12-month non-compete after termination. The employee waives all statutory gratuity rights.</textarea>
      <textarea id="docB" class="lux-input mb-3" placeholder="Document B (optional — statute text). Leave blank to match against the knowledge graph."></textarea>
      <button id="run" class="glow-btn px-5 py-2">Detect Conflicts</button>`);
@@ -512,7 +525,7 @@ function renderContradiction() {
 
 // ---------- TIMELINE ----------
 function renderTimeline() {
-  panel("🕰️ Temporal Legal Timeline", "Amendment history + 'law as of date X' (PRD §7.2).",
+  panel("Temporal Legal Timeline", "Amendment history + 'law as of date X' (PRD §7.2).",
     `<div class="flex gap-2 mb-3"><input id="sec" class="lux-input" placeholder="Section number (e.g. 41 or 66A)" value="41" />
      <input id="asof" class="lux-input" placeholder="As of date (YYYY-MM-DD, optional)" value="2008-01-01" /></div>
      <button id="run" class="glow-btn px-5 py-2">Build Timeline</button>`);
@@ -534,7 +547,7 @@ function renderTimeline() {
 
 // ---------- OUTCOME ----------
 function renderOutcome() {
-  panel("📊 Case Outcome Predictor", "Precedent-strength analysis from similar historical cases (PRD §7.3). Probabilistic & educational — not legal advice.",
+  panel("Case Outcome Predictor", "Precedent-strength analysis from similar historical cases (PRD §7.3). Probabilistic & educational — not legal advice.",
     `<textarea id="facts" class="lux-input mb-2" placeholder="Describe the case facts…">Accused charged under Section 302 in a sudden fight with grave provocation and no premeditation.</textarea>
      <div class="flex gap-2 mb-3"><input id="sec" class="lux-input" placeholder="Offence section (optional)" value="302" />
      <input id="desired" class="lux-input" placeholder="Desired outcome (optional)" value="acquittal" /></div>
@@ -558,7 +571,7 @@ function renderOutcome() {
 
 // ---------- CLAUSE RISK ----------
 function renderClause() {
-  panel("🛡️ Clause Risk Scorer", "Per-clause litigation risk (LOW/MED/HIGH) against the knowledge base (PRD §4.2).",
+  panel("Clause Risk Scorer", "Per-clause litigation risk (LOW/MED/HIGH) against the knowledge base (PRD §4.2).",
     `<textarea id="ct" class="lux-input mb-3" placeholder="Paste contract text…">The employee shall not compete for 24 months post termination.
 The company bears unlimited liability for all losses.
 Confidential information shall remain secret.
@@ -576,7 +589,7 @@ This agreement may be terminated by either party.</textarea>
 
 // ---------- JURISDICTION ----------
 function renderJurisdiction() {
-  panel("🗺️ Jurisdiction Mapper", "Central vs State competence + precedent level (PRD §4.2).",
+  panel("Jurisdiction Mapper", "Central vs State competence + precedent level (PRD §4.2).",
     `<input id="q" class="lux-input mb-3" placeholder="Legal query…" value="Is a shops and establishment registration mandatory?" />
      <button id="run" class="glow-btn px-5 py-2">Map Jurisdiction</button>`);
   el("#run").addEventListener("click", async () => {
@@ -594,7 +607,7 @@ function renderJurisdiction() {
 
 // ---------- DRAFTER ----------
 function renderDrafter() {
-  panel("✍️ Smart Contract Drafter", "RAG-backed draft with legal basis + per-clause risk (PRD §4.2).",
+  panel("Smart Contract Drafter", "RAG-backed draft with legal basis + per-clause risk (PRD §4.2).",
     `<div class="flex gap-2 mb-2"><select id="ctype" class="lux-input"><option value="employment">Employment</option><option value="nda">NDA</option><option value="service">Service</option></select>
      <input id="parties" class="lux-input" placeholder="Parties (comma separated)" value="Acme Pvt Ltd, Mr. Sharma" /></div>
      <input id="terms" class="lux-input mb-3" placeholder="Key terms (optional)" value="6-month probation, Bengaluru jurisdiction" />
@@ -613,7 +626,7 @@ function renderDrafter() {
 
 // ---------- HINDI ----------
 function renderHindi() {
-  panel("🇮🇳 Hindi Legal Query Bridge", "Ask in Hindi; we translate via legal glossary and answer with citations (PRD §7.4).",
+  panel("Hindi Legal Query Bridge", "Ask in Hindi; we translate via legal glossary and answer with citations (PRD §7.4).",
     `<input id="q" class="lux-input mb-3" placeholder="हिंदी में प्रश्न…" value="dhara 302 ki saja kya hai" />
      <button id="run" class="glow-btn px-5 py-2">Translate & Answer</button>`);
   el("#run").addEventListener("click", async () => {
@@ -628,8 +641,8 @@ function renderHindi() {
 
 // ---------- ADMIN ----------
 async function renderAdmin() {
-  if (!state.isAdmin) { panel("📈 Admin Analytics", "Sign in as an admin to view.", `<div class="text-sm text-slate-400">Admin access required (demo: admin@kg-legal.ai / admin).</div>`); return; }
-  panel("📈 Admin Analytics", "Live query volume, latency, confidence & quality (PRD §8.3).",
+  if (!state.isAdmin) { panel("Admin Analytics", "Sign in as an admin to view.", `<div class="text-sm text-slate-400">Admin access required (demo: admin@kg-legal.ai / admin).</div>`); return; }
+  panel("Admin Analytics", "Live query volume, latency, confidence & quality (PRD §8.3).",
     `<div class="grid sm:grid-cols-4 gap-3" id="kpis"></div>
      <div class="grid md:grid-cols-2 gap-4 mt-4"><div class="card p-3"><canvas id="volChart" height="160"></canvas></div><div class="card p-3"><canvas id="confChart" height="160"></canvas></div></div>
      <div id="evalBox" class="mt-4"></div>`);
@@ -651,7 +664,7 @@ function chartOpts() { return { plugins: { legend: { labels: { color: "#9fb0d0" 
 
 // ---------- BILLING ----------
 async function renderBilling() {
-  panel("💎 Plans & Billing", "Upgrade your tier (demo stub — no card charged).", `<div id="plans" class="grid sm:grid-cols-3 gap-4"></div>`);
+  panel("Plans & Billing", "Upgrade your tier (demo stub — no card charged).", `<div id="plans" class="grid sm:grid-cols-3 gap-4"></div>`, "Subscription");
   el("#result").innerHTML = "";
   const plans = await api("/billing/plans");
   el("#plans").innerHTML = plans.map(p => `<div class="card p-5 text-center">
