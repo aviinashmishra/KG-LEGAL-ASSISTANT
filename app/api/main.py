@@ -33,7 +33,15 @@ async def lifespan(app: FastAPI):
     print(settings.provider_banner())
     init_db()
     init_observability()
-    initialize(verbose=True)
+    # Warm up the graph + indexes in a background thread so the HTTP socket binds
+    # immediately. uvicorn opens the listening port only after lifespan startup
+    # returns; doing heavy work here would delay binding past the platform's
+    # port-scan window (Render/Railway). Requests lazily wait via ensure_initialized().
+    import threading
+
+    threading.Thread(
+        target=lambda: initialize(verbose=True), name="warmup", daemon=True
+    ).start()
     yield
 
 
@@ -81,7 +89,11 @@ def ready() -> dict:
         "ready": ready_flag,
         "providers": {
             "llm": "anthropic" if settings.use_anthropic else "stub",
-            "embeddings": "openai" if settings.use_openai_embeddings else "local",
+            "embeddings": (
+                "openai" if settings.use_openai_embeddings
+                else "hashing" if settings.use_light_embeddings
+                else "local"
+            ),
             "graph": store.backend,
             "vectors": "qdrant" if settings.use_qdrant else "in-memory",
             "rerank": "cohere" if settings.use_cohere else "local",

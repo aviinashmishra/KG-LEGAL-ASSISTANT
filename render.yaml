@@ -16,6 +16,11 @@ services:
         generateValue: true
       - key: ADMIN_EMAIL
         value: admin@kg-legal.ai
+      # free plan = 512 MB RAM: use the lightweight hashing embedder (no torch),
+      # so startup is fast and the instance never OOMs. Set OPENAI_API_KEY (or a
+      # bigger plan + LIGHT_EMBEDDINGS=false) for full-quality dense embeddings.
+      - key: LIGHT_EMBEDDINGS
+        value: "true"
       # set these (and the optional provider keys) in the Render dashboard
       - key: ADMIN_PASSWORD
         sync: false

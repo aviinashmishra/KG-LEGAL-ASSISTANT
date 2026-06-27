@@ -58,12 +58,27 @@ class QdrantVectorStore:
         self.embedder = embedder
         self.collection = s.qdrant_collection
         self._client = QdrantClient(url=s.qdrant_url, api_key=s.qdrant_api_key or None)
-        if not self._client.collection_exists(self.collection):
-            self._client.create_collection(
-                collection_name=self.collection,
-                vectors_config=VectorParams(size=embedder.dim, distance=Distance.COSINE),
-            )
+        self._ensure_collection(VectorParams(size=embedder.dim, distance=Distance.COSINE))
         self._n = 0
+
+    def _ensure_collection(self, vectors_config) -> None:
+        """Create the collection, recreating it if its vector dim no longer matches
+        the active embedder (e.g. after switching MiniLM ↔ OpenAI ↔ hashing)."""
+        if not self._client.collection_exists(self.collection):
+            self._client.create_collection(self.collection, vectors_config=vectors_config)
+            return
+        try:
+            info = self._client.get_collection(self.collection)
+            existing = info.config.params.vectors
+            existing_dim = getattr(existing, "size", None)
+            if existing_dim is not None and existing_dim != vectors_config.size:
+                print(
+                    f"[vector_store] collection '{self.collection}' dim {existing_dim} != "
+                    f"embedder dim {vectors_config.size}; recreating."
+                )
+                self._client.recreate_collection(self.collection, vectors_config=vectors_config)
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"[vector_store] could not verify collection dim ({exc}); continuing.")
 
     def upsert(self, docs: List[Document]) -> None:
         from qdrant_client.models import PointStruct

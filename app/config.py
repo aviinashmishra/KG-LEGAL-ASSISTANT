@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     local_embed_model: str = Field(
         "sentence-transformers/all-MiniLM-L6-v2", alias="LOCAL_EMBED_MODEL"
     )
+    # Force the lightweight hashing embedder (skips torch / sentence-transformers).
+    # Ideal for small/free hosts (≤512 MB RAM): fast startup, tiny footprint.
+    light_embeddings: bool = Field(False, alias="LIGHT_EMBEDDINGS")
 
     # --- Pipeline tuning ---
     hallucination_max_unverified: float = Field(
@@ -112,6 +115,10 @@ class Settings(BaseSettings):
         return bool(self.openai_api_key.strip())
 
     @property
+    def use_light_embeddings(self) -> bool:
+        return self.light_embeddings and not self.use_openai_embeddings
+
+    @property
     def use_neo4j(self) -> bool:
         return bool(self.neo4j_uri.strip() and self.neo4j_password.strip())
 
@@ -127,7 +134,7 @@ class Settings(BaseSettings):
         """Human-readable summary of which providers are active vs fallback."""
         rows = [
             ("LLM", "Anthropic Claude" if self.use_anthropic else "stub (deterministic)"),
-            ("Embeddings", "OpenAI" if self.use_openai_embeddings else f"local ({self.local_embed_model.split('/')[-1]})"),
+            ("Embeddings", "OpenAI" if self.use_openai_embeddings else ("hashing (light)" if self.use_light_embeddings else f"local ({self.local_embed_model.split('/')[-1]})")),
             ("Graph", "Neo4j AuraDB" if self.use_neo4j else "in-memory NetworkX"),
             ("Vectors", "Qdrant" if self.use_qdrant else "in-memory numpy"),
             ("Rerank", "Cohere" if self.use_cohere else "local score passthrough"),

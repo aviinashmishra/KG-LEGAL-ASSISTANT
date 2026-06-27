@@ -5,6 +5,8 @@ in-memory backends; for Neo4j/Qdrant it upserts (safe to re-run).
 """
 from __future__ import annotations
 
+import threading
+
 from app.config import PDF_DIR, get_settings
 from app.kg.builder import ingest_parsed_doc, load_seed, validate_integrity
 from app.kg.graph_store import get_graph_store
@@ -12,11 +14,27 @@ from app.parsing.pdf_parser import parse_file
 from app.retrieval.indexer import build_indexes
 
 _INITIALIZED = False
+_LAST_SUMMARY: dict = {}
+_INIT_LOCK = threading.Lock()
 
 
 def initialize(include_pdfs: bool = True, verbose: bool = True) -> dict:
-    """Load seed data (+ any drop-in PDFs) and build the dense/sparse indexes."""
-    global _INITIALIZED
+    """Load seed data (+ any drop-in PDFs) and build the dense/sparse indexes.
+
+    Thread-safe and idempotent: concurrent callers (e.g. the background warm-up
+    started at app startup and the first request) won't double-build.
+    """
+    global _INITIALIZED, _LAST_SUMMARY
+    with _INIT_LOCK:
+        if _INITIALIZED:
+            return _LAST_SUMMARY
+        summary = _do_initialize(include_pdfs=include_pdfs, verbose=verbose)
+        _LAST_SUMMARY = summary
+        _INITIALIZED = True
+        return summary
+
+
+def _do_initialize(include_pdfs: bool = True, verbose: bool = True) -> dict:
     settings = get_settings()
     store = get_graph_store()
 
@@ -39,7 +57,6 @@ def initialize(include_pdfs: bool = True, verbose: bool = True) -> dict:
 
     index_counts = build_indexes(store)
     warnings = validate_integrity(store)
-    _INITIALIZED = True
 
     summary = {
         "graph": store.stats(),

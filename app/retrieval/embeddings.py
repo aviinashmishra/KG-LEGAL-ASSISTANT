@@ -94,6 +94,10 @@ def get_embedder(force_new: bool = False) -> Embedder:
             return _EMBEDDER
         except Exception as exc:  # pragma: no cover
             print(f"[embeddings] OpenAI unavailable ({exc}); trying local model.")
+    if settings.use_light_embeddings:
+        # explicit low-memory mode: skip torch / sentence-transformers entirely
+        _EMBEDDER = HashingEmbedder()
+        return _EMBEDDER
     try:
         _EMBEDDER = LocalEmbedder()
         return _EMBEDDER
